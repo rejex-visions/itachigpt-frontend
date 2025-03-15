@@ -175,15 +175,29 @@
         function createMessageElement(content, isUser) {
             const wrapper = document.createElement('div');
             wrapper.classList.add('message-wrapper', isUser ? 'user-message-wrapper' : 'bot-message-wrapper');
-            wrapper.innerHTML = `
-                <div class="message">
-                    ${!isUser ? `<div class="avatar-icon bot-avatar">I</div>` : ''}
-                    <div class="message-content ${isUser ? 'user-message-content' : 'bot-message-content'}">
-                        ${content}
-                    </div>
-                    ${isUser ? `<div class="avatar-icon user-avatar">U</div>` : ''}
-                </div>
-            `;
+            const message = document.createElement('div');
+            message.classList.add('message');
+            if (!isUser) {
+                const botAvatar = document.createElement('div');
+                botAvatar.classList.add('avatar-icon', 'bot-avatar');
+                botAvatar.textContent = 'I';
+                message.appendChild(botAvatar);
+            }
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('message-content', isUser ? 'user-message-content' : 'bot-message-content');
+            if (typeof content === 'string') {
+                messageContent.textContent = content;
+            } else {
+                messageContent.appendChild(content);
+            }
+            message.appendChild(messageContent);
+            if (isUser) {
+                const userAvatar = document.createElement('div');
+                userAvatar.classList.add('avatar-icon', 'user-avatar');
+                userAvatar.textContent = 'U';
+                message.appendChild(userAvatar);
+            }
+            wrapper.appendChild(message);
             return wrapper;
         }
 
@@ -204,14 +218,27 @@
                     body: JSON.stringify({ message: messageText })
                 });
                 console.log('Response status:', response.status);
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}`);
-                }
                 const data = await response.json();
                 console.log('Response data:', data);
                 removeTypingIndicator();
-                const botMessage = createMessageElement(data.response, false);
-                chatContainer.appendChild(botMessage);
+                if (response.ok) {
+                    if (data.type === 'text') {
+                        const botMessage = createMessageElement(data.content, false);
+                        chatContainer.appendChild(botMessage);
+                    } else if (data.type === 'image') {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = data.content;
+                        imgElement.style.maxWidth = '100%';
+                        const botMessage = createMessageElement(imgElement, false);
+                        chatContainer.appendChild(botMessage);
+                    } else {
+                        const errorMessage = createMessageElement(`Unexpected response type: ${data.type}`, false);
+                        chatContainer.appendChild(errorMessage);
+                    }
+                } else {
+                    const errorMessage = createMessageElement(`Error: ${data.content || 'Unknown error'}`, false);
+                    chatContainer.appendChild(errorMessage);
+                }
             } catch (error) {
                 console.error('Error with fetch:', error);
                 removeTypingIndicator();
