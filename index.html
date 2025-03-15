@@ -242,7 +242,7 @@
             } catch (error) {
                 console.error('Error with fetch:', error);
                 removeTypingIndicator();
-                const errorMessage = createMessageElement('Oops, something went wrong!', false);
+                const errorMessage = createMessageElement(`Error: ${error.message}`, false);
                 chatContainer.appendChild(errorMessage);
             }
             chatContainer.scrollTop = chatContainer.scrollHeight;
